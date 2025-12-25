@@ -1,4 +1,5 @@
 import Image, { type ImageProps } from "next/image";
+import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import styles from "./page.module.css";
 
@@ -68,6 +69,16 @@ export default function Home() {
         </Button>
       </main>
       <footer className={styles.footer}>
+        <Link href="/trips">
+          <Image
+            aria-hidden
+            src="/window.svg"
+            alt="Trips icon"
+            width={16}
+            height={16}
+          />
+          Trips
+        </Link>
         <a
           href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
           target="_blank"
