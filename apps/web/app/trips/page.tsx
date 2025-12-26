@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { tripsApi } from '@/lib/api/trips';
-import type { Trip } from '@/lib/types';
+import { useState } from 'react';
+import { useTrips, useCreateTrip } from '@/lib/hooks/useTrips';
 import styles from './trips.module.css';
 
 export default function TripsPage() {
-  const [trips, setTrips] = useState<Trip[]>([]);
+  const { data: trips = [], isLoading, error, refetch } = useTrips();
+  const createTripMutation = useCreateTrip();
+
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -16,45 +17,48 @@ export default function TripsPage() {
     duration: '',
   });
 
-  const loadTrips = async () => {
-    try {
-      const data = await tripsApi.getAll();
-      setTrips(data);
-    } catch (error) {
-      console.error('Failed to load trips:', error);
-    }
-  };
-
-  useEffect(() => {
-    loadTrips();
-  }, []);
-
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      const newTrip = await tripsApi.create({
+    createTripMutation.mutate(
+      {
         title: formData.title,
         dateStart: formData.dateStart,
         dateFinish: formData.dateFinish,
         code: formData.code,
         duration: formData.duration ? parseInt(formData.duration) : null,
-      });
-
-      setTrips([newTrip, ...trips]);
-      setFormData({ title: '', dateStart: '', dateFinish: '', code: '', duration: '' });
-      setShowForm(false);
-    } catch (error) {
-      console.error('Failed to create trip:', error);
-    }
+      },
+      {
+        onSuccess: () => {
+          setFormData({ title: '', dateStart: '', dateFinish: '', code: '', duration: '' });
+          setShowForm(false);
+        },
+      }
+    );
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <p className={styles.emptyState}>Loading trips...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <p className={styles.emptyState}>Error loading trips: {error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Trips</h1>
         <div className={styles.actions}>
-          <button onClick={loadTrips} className={styles.secondaryButton}>
+          <button onClick={() => refetch()} className={styles.secondaryButton}>
             Refresh
           </button>
           <button onClick={() => setShowForm(!showForm)} className={styles.primaryButton}>
@@ -121,8 +125,12 @@ export default function TripsPage() {
             />
           </div>
 
-          <button type="submit" className={styles.submitButton}>
-            Create Trip
+          <button
+            type="submit"
+            className={styles.submitButton}
+            disabled={createTripMutation.isPending}
+          >
+            {createTripMutation.isPending ? 'Creating...' : 'Create Trip'}
           </button>
         </form>
       )}

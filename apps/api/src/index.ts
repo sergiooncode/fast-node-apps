@@ -35,15 +35,15 @@ app.get('/trips/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid trip ID' });
     }
 
-    const trip = await prisma.trip.findUnique({
-      where: { id }
-    });
+    const trips = await prisma.$queryRaw`
+      SELECT * FROM Trip WHERE id = ${id}
+    `;
 
-    if (!trip) {
+    if (!Array.isArray(trips) || trips.length === 0) {
       return res.status(404).json({ error: 'Trip not found' });
     }
 
-    res.json(trip);
+    res.json(trips[0]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch trip' });
   }
