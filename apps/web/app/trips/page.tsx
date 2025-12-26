@@ -1,18 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { tripsApi } from '@/lib/api/trips';
+import type { Trip } from '@/lib/types';
 import styles from './trips.module.css';
-
-interface Trip {
-  id: number;
-  uuid: string;
-  title: string;
-  dateStart: string;
-  dateFinish: string;
-  code: string;
-  duration?: number | null;
-  createdAt: string;
-}
 
 export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -25,44 +16,36 @@ export default function TripsPage() {
     duration: '',
   });
 
+  const loadTrips = async () => {
+    try {
+      const data = await tripsApi.getAll();
+      setTrips(data);
+    } catch (error) {
+      console.error('Failed to load trips:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadTrips();
+  }, []);
+
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:3002/trips', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          dateStart: formData.dateStart,
-          dateFinish: formData.dateFinish,
-          code: formData.code,
-          duration: formData.duration ? parseInt(formData.duration) : null,
-        }),
+      const newTrip = await tripsApi.create({
+        title: formData.title,
+        dateStart: formData.dateStart,
+        dateFinish: formData.dateFinish,
+        code: formData.code,
+        duration: formData.duration ? parseInt(formData.duration) : null,
       });
 
-      if (response.ok) {
-        const newTrip = await response.json();
-        setTrips([newTrip, ...trips]);
-        setFormData({ title: '', dateStart: '', dateFinish: '', code: '', duration: '' });
-        setShowForm(false);
-      }
+      setTrips([newTrip, ...trips]);
+      setFormData({ title: '', dateStart: '', dateFinish: '', code: '', duration: '' });
+      setShowForm(false);
     } catch (error) {
       console.error('Failed to create trip:', error);
-    }
-  };
-
-  const loadTrips = async () => {
-    try {
-      const response = await fetch('http://localhost:3002/trips');
-      if (response.ok) {
-        const data = await response.json();
-        setTrips(data);
-      }
-    } catch (error) {
-      console.error('Failed to load trips:', error);
     }
   };
 
